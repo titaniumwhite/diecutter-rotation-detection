@@ -1,11 +1,10 @@
-// Array di Acc e di Gyro. Ogni Acc o Gyro equivale a un sample.
-var acc_data = [];
-var gyro_data = [];
+const GYRO_SENSITIVITY =  65;
+const ACC_SENSITIVITY =  8192;
+const T = 0.014; // 104Hz
 
-var pitch = [];
-var roll = [];
-
-var t = 0.0125; // 12.5Hz
+var pitch_data = [];
+var roll_data = [];
+var yaw_data = [];
 
 function Acc(x, y, z) {
   this.x = x;
@@ -19,69 +18,43 @@ function Gyro(x, y, z) {
   this.z = z;
 }
 
-function complementaryFilter(acc_data, gyro_data){
-  for(var i = 0; i < acc_data.length; i++) {
-    var pitchAcc, rollAcc;
-    var ax = acc_data[i].x, ay = acc_data[i].y, az = acc_data[i].z;
-    var gx = gyro_data[i].x, gy = gyro_data[i].y, gz = gyro_data[i].z;
+function complementaryFilter(acc, gyro){
+  var pitchAcc, rollAcc, yawAcc;
+  var ax = acc.x, ay = acc.y, az = acc.z;
+  var gx = gyro.x, gy = gyro.y, gz = gyro.z;
 
-    /* Bisogna considerare la sensitività del giroscopio? */
-    pitch.push(gx * t);
-    roll.push(gy * t);
+  var pitch = (gx / GYRO_SENSITIVITY) + ((gx / GYRO_SENSITIVITY) * T);
+  var roll = (gy / GYRO_SENSITIVITY) - ((gy / GYRO_SENSITIVITY) * T);
+  var yaw = ((gz / GYRO_SENSITIVITY) * T);
 
-    /* Quale è la condizione dell'if?
-       Quale dei due metodi usare per la correzione dell'angolo con accelerometro? */
-    if(true) {
-      pitchAcc = Math.atan2( Math.sqrt( Math.pow(ax, ax) + Math.pow(az, az)), ay ) * 180 / Math.PI;
-      pitch[i] = pitch[i] * 0.98 + pitchAcc * 0.02;
+  pitchAcc = Math.atan2( ay, az ) * 180 / Math.PI;
+  pitch = pitch * 0.98 + pitchAcc * 0.02;
+  pitch_data.push(pitch);
 
-      rollAcc = Math.atan2( Math.sqrt( Math.pow(ay, ay) + Math.pow(ax, ax)), az) * 180 / Math.PI;
-      roll[i] = roll[i] * 0.98 + rollAcc * 0.02;
+  rollAcc = Math.atan(ax, az ) * 180 / Math.PI;
+  roll = roll * 0.98 + rollAcc * 0.02;
+  roll_data.push(roll);
 
-      /*
-      pitchAcc = Math.atan2( ay, az ) * 180 / Math.PI;
-      pitch[i] = pitch[i] * 0.98 + pitchAcc * 0.02;
-
-      rollAcc = Math.atan2( ax, az ) * 180 / Math.PI;
-      roll[i] = roll[i] * 0.98 + rollAcc * 0.02;
-      */
-    }
-  }
-
-  console.log("pitch", pitch);
-  console.log("roll", roll);
+  /*
+  yawAcc = Math.atan( az / Math.sqrt(ax*ax + az*az) ) * 180 / Math.PI;
+  yaw = yaw * 0.98 + yawAcc * 0.02;
+  */
 }
 
-for(var i = 0; i < 5; i++) {
-  var data = Puck.accel();
+Puck.accelOn(104); // default 12.5Hz
+Puck.on('accel', function(data) {
   var acc = new Acc(data.acc.x, data.acc.y, data.acc.z);
   var gyro = new Gyro(data.gyro.x, data.gyro.y, data.gyro.z);
-  acc_data.push(acc);
-  gyro_data.push(gyro);
-  console.log("acceleration " + acc.x + "     " + acc.y + "     " + acc.z);
-  console.log("gyro " + gyro.x + "     " + gyro.y + "     " + gyro.z);
-}
 
-complementaryFilter(acc_data, gyro_data);
+  console.log("acceleration " + acc.x / ACC_SENSITIVITY + "     " + acc.y / ACC_SENSITIVITY+ "     " + acc.z / ACC_SENSITIVITY);
+  console.log("gyro " + gyro.x / GYRO_SENSITIVITY + "     " + gyro.y / GYRO_SENSITIVITY + "     " + gyro.z / GYRO_SENSITIVITY);
 
-
-
-/*
-// Metodo alternativo per raccogliere i dati.
-// Puck.accel() resistuisce soltanto un sample;
-// Puck.accelOn() streamma una serie di sample a 12.5Hz fin quando non viene chiamato Puck.accelOff().
-
-Puck.accelOn(); // default 12.5Hz
-Puck.on('accel', function(data) {
-    var acc = new Acc(data.acc.x, data.acc.y, data.acc.z);
-    var gyro = new Gyro(data.gyro.x, data.gyro.y, data.gyro.z);
-    acc_data.push(acc);
-    gyro_data.push(gyro);
-    console.log("acceleration " + acc.x + "     " + acc.y + "     " + acc.z);
-    console.log("gyro " + gyro.x + "     " + gyro.y + "     " + gyro.z);
+  complementaryFilter(acc, gyro);
 });
+
 //Turn events off with Puck.accelOff()
-//Puck.accelOff();
-*/
-
-
+setWatch( function() {
+  console.log("pitch", pitch_data);
+  console.log("roll", roll_data);
+  Puck.accelOff();
+}, BTN1, {repeat: true});
