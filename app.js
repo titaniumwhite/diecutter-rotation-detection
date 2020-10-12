@@ -6,6 +6,17 @@ var pitch_data = [];
 var roll_data = [];
 var yaw_data = [];
 
+var f = require("Storage").open("log","w");
+
+// Write some data
+function getData() {
+  var f = require("Storage").open("log","r");  
+  var l = f.readLine();
+  while (l!==undefined) {
+    console.log(l)
+    l = f.readLine();
+  }
+}
 function Acc(x, y, z) {
   this.x = x;
   this.y = y;
@@ -46,8 +57,9 @@ Puck.on('accel', function(data) {
   var acc = new Acc(data.acc.x, data.acc.y, data.acc.z);
   var gyro = new Gyro(data.gyro.x, data.gyro.y, data.gyro.z);
 
-  console.log("acceleration " + acc.x / ACC_SENSITIVITY + "     " + acc.y / ACC_SENSITIVITY+ "     " + acc.z / ACC_SENSITIVITY);
-  console.log("gyro " + gyro.x / GYRO_SENSITIVITY + "     " + gyro.y / GYRO_SENSITIVITY + "     " + gyro.z / GYRO_SENSITIVITY);
+  //console.log("acceleration " + acc.x / ACC_SENSITIVITY + "     " + acc.y / ACC_SENSITIVITY+ "     " + acc.z / ACC_SENSITIVITY);
+  //console.log("gyro " + gyro.x / GYRO_SENSITIVITY + "     " + gyro.y / GYRO_SENSITIVITY + "     " + gyro.z / GYRO_SENSITIVITY);
+  f.write(getTime()+" "+ acc.x / ACC_SENSITIVITY + " " + acc.y / ACC_SENSITIVITY+ " " + acc.z / ACC_SENSITIVITY +" "+ gyro.x / GYRO_SENSITIVITY + " " + gyro.y / GYRO_SENSITIVITY + " " + gyro.z / GYRO_SENSITIVITY+"\n");
 
   complementaryFilter(acc, gyro);
 });
