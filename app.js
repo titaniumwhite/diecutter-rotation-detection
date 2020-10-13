@@ -68,5 +68,9 @@ Puck.on('accel', function(data) {
 setWatch( function() {
   console.log("pitch", pitch_data);
   console.log("roll", roll_data);
+  f.write("C-Filter\n");
+  for(i=0;i<roll_data.length;i++){
+    f.write(pitch_data[i]+" "+roll_data[i]+"\n");
+  }
   Puck.accelOff();
 }, BTN1, {repeat: true});
