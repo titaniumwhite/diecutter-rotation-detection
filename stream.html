@@ -1,6 +1,6 @@
 <html>
  <head>
-  <title>Bangle.js Accelerometer streaming</title>
+  <title>Puck.js Accelerometer streaming</title>
  </head>
  <body>
 <script src="https://www.puck-js.com/puck.js"></script>
@@ -9,17 +9,76 @@
 <p>Y: <span class="bar"><span id="barY"></span></span></p>
 <p>Z: <span class="bar"><span id="barZ"></span></span></p>
 <script>
+
+var csv = [];
+
 // Code to upload to Bangle.js
 var BANGLE_CODE = `
-Puck.on('accel',function(a) {
+const GYRO_SENSITIVITY =  65;
+const ACC_SENSITIVITY =  8192;
+const T = 0.014; // 104Hz
+
+class Acc {
+  constructor(x,y,z) {
+     this.x = x;
+     this.y = y;
+      this.z = z;
+  }
+}
+
+class Gyro {
+   constructor(x,y,z) {
+     this.x = x;
+     this.y = y;
+     this.z = z;
+  }
+}
+
+function complementaryFilter(acc, gyro){
+  var pitchAcc, rollAcc, yawAcc;
+  var ax = acc.x, ay = acc.y, az = acc.z;
+  var gx = gyro.x, gy = gyro.y, gz = gyro.z;
+
+  var pitch = (gx / GYRO_SENSITIVITY) + ((gx / GYRO_SENSITIVITY) * T);
+  var roll = (gy / GYRO_SENSITIVITY) - ((gy / GYRO_SENSITIVITY) * T);
+  var yaw = ((gz / GYRO_SENSITIVITY) * T);
+
+  pitchAcc = Math.atan2( ay, az) * 180 / Math.PI;
+  pitch = pitch * 0.98 + pitchAcc * 0.02;
+
+  rollAcc = Math.atan(ax, az) * 180 / Math.PI;
+  roll = roll * 0.98 + rollAcc * 0.02;
+
+  return [pitch, roll];
+}
+
+Puck.accelOn(104); // default 12.5Hz
+Puck.on('accel', function(data) {
+  var acc = new Acc(data.acc.x, data.acc.y, data.acc.z);
+  var gyro = new Gyro(data.gyro.x, data.gyro.y, data.gyro.z);
+
+  var cf = complementaryFilter(acc, gyro);
+
   var d = [
     "A",
-    Math.round(a.x*100),
-    Math.round(a.y*100),
-    Math.round(a.z*100)
-    ];
+    acc.x,
+    acc.y,
+    acc.z,
+    gyro.x,
+    gyro.y,
+    gyro.z,
+    cf[0],
+    cf[1],
+  ];
+
   Bluetooth.println(d.join(","));
-})
+});
+
+setWatch( function() {
+  Puck.accelOff();
+  var f = ["F"];
+  Bluetooth.println(f);
+}, BTN1, {repeat: true});
 `;
 
 // When we click the connect button...
@@ -62,20 +121,49 @@ document.getElementById("btnConnect").addEventListener("click", function() {
 // from the accelerometer, update it
 function onLine(line) {
   console.log("RECEIVED:"+line);
+  csv.push(line);
+  var f = line;
   var d = line.split(",");
-  if (d.length==4 && d[0]=="A") {
+  if (d.length==9 && d[0]=="A") {
     // we have an accelerometer reading
     var accel = {
-      x : parseInt(d[1]),
-      y : parseInt(d[2]),
-      z : parseInt(d[3]),
-    };    
+      x : parseFloat(d[1]),
+      y : parseFloat(d[2]),
+      z : parseFloat(d[3]),
+    };   
+
+    var gyro = {
+      x : parseFloat(d[4]),
+      y : parseFloat(d[5]),
+      z : parseFloat(d[6]),
+    };
+
+    var cf = {
+      pitch : parseFloat(d[7]),
+      roll : parseFloat(d[8]),
+    };
+
     // Update bar positions
     setBarPos("barX", accel.x);
     setBarPos("barY", accel.y);
     setBarPos("barZ", accel.z);
+  } else if (f[0] == "F") {
+    saveFile(csv, "data");
   }
 }
+
+function saveFile(csvText, fileName) {
+  var saver = document.createElement("a");
+  var blob = new Blob([csvText], {type : 'text/csv'});
+  var blobURL = saver.href = URL.createObjectURL(blob),
+      body = document.body;
+  saver.download = fileName;
+  body.appendChild(saver);
+  saver.dispatchEvent(new MouseEvent("click"));
+  body.removeChild(saver);
+  URL.revokeObjectURL(blobURL);
+}
+
 // Set the position of each bar
 function setBarPos(id,d) {
   var s = document.getElementById(id).style;
