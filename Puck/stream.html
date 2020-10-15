@@ -1,0 +1,168 @@
+<html>
+ <head>
+  <title>Puck.js Accelerometer streaming</title>
+ </head>
+    <body>
+    <script src="https://www.puck-js.com/puck.js"></script>
+    <button id="btnConnect">Connect</button>
+    <h1 id="info"></h1>
+        <script>
+
+        var csv = "";
+
+        // Code to upload to Bangle.js
+        var PUCK_CODE = `
+        const GYRO_SENSITIVITY =  65;
+        const ACC_SENSITIVITY =  8192;
+        const T = 0.014; // 104Hz
+
+        class Acc {
+        constructor(x,y,z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        }
+
+        class Gyro {
+        constructor(x,y,z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        }
+
+        function complementaryFilter(acc, gyro){
+        var pitchAcc, rollAcc, yawAcc;
+        var ax = acc.x, ay = acc.y, az = acc.z;
+        var gx = gyro.x, gy = gyro.y, gz = gyro.z;
+
+        var pitch = (gx / GYRO_SENSITIVITY) + ((gx / GYRO_SENSITIVITY) * T);
+        var roll = (gy / GYRO_SENSITIVITY) - ((gy / GYRO_SENSITIVITY) * T);
+        var yaw = ((gz / GYRO_SENSITIVITY) * T);
+
+        pitchAcc = Math.atan2( ay, az) * 180 / Math.PI;
+        pitch = pitch * 0.98 + pitchAcc * 0.02;
+
+        rollAcc = Math.atan(ax, az) * 180 / Math.PI;
+        roll = roll * 0.98 + rollAcc * 0.02;
+
+        return [pitch, roll];
+        }
+
+        Puck.accelOn(104); // default 12.5Hz
+        Puck.on('accel', function(data) {
+        var acc = new Acc(data.acc.x, data.acc.y, data.acc.z);
+        var gyro = new Gyro(data.gyro.x, data.gyro.y, data.gyro.z);
+
+        var cf = complementaryFilter(acc, gyro);
+
+        var d = [
+            "A",
+            acc.x,
+            acc.y,
+            acc.z,
+            gyro.x,
+            gyro.y,
+            gyro.z,
+            cf[0],
+            cf[1],
+        ];
+
+        Bluetooth.println(d.join(","));
+        });
+
+        setWatch( function() {
+        Puck.accelOff();
+        var f = ["F"];
+        Bluetooth.println(f);
+        }, BTN1, {repeat: true});
+        `;
+
+        // When we click the connect button...
+        var connection;
+        document.getElementById("btnConnect").addEventListener("click", function() {
+        // disconnect if connected already
+        if (connection) {
+            connection.close();
+            connection = undefined;
+        }
+        // Connect
+        Puck.connect(function(c) {
+            if (!c) {
+            alert("Couldn't connect!");
+            return;
+            }
+            connection = c;
+            // Handle the data we get back, and call 'onLine'
+            // whenever we get a line
+            document.getElementById("info").innerHTML = "Per terminare lo stream premi il pulsante sul Puck";
+            var buf = "";
+            connection.on("data", function(d) {
+            buf += d;
+            var l = buf.split("\n");
+            buf = l.pop();
+            l.forEach(onLine);
+            });
+            // First, reset the Bangle
+            connection.write("reset();\n", function() {
+            // Wait for it to reset itself
+            setTimeout(function() {
+                // Now upload our code to it
+                connection.write("\x03\x10if(1){"+PUCK_CODE+"}\n",
+                function() { console.log("Ready..."); });
+            }, 1500);
+            });
+        });
+        });
+
+        // When we get a line of data, check it and if it's
+        // from the accelerometer, update it
+        function onLine(line) {
+            console.log("RECEIVED:"+line);
+            var f = line;
+            var d = line.split(",");
+            if (d.length==9 && d[0]=="A") {
+                // we have an accelerometer reading
+                var to_add = "";
+                var accel = {
+                x : parseFloat(d[1])/8192,
+                y : parseFloat(d[2])/8192,
+                z : parseFloat(d[3])/8192,
+                };   
+                to_add += accel.x +" "+ accel.y+" "+accel.z+" ";
+                var gyro = {
+                x : parseFloat(d[4])/65,
+                y : parseFloat(d[5])/65,
+                z : parseFloat(d[6])/65,
+                };
+                to_add += gyro.x +" "+ gyro.y+" "+gyro.z+" ";
+                var cf = {
+                pitch : parseFloat(d[7]),
+                roll : parseFloat(d[8]),
+                };            
+                to_add += cf.pitch +" "+ cf.roll;
+                to_add += "\n";
+                csv += to_add;
+
+            } else if (f[0] == "F") {
+                console.log(csv);
+                saveFile(csv, "data.csv");
+            }
+        }
+
+        function saveFile(csvText, fileName) {
+        var saver = document.createElement("a");
+        var blob = new Blob([csvText], {type : 'text/csv'});
+        var blobURL = saver.href = URL.createObjectURL(blob),
+            body = document.body;
+        saver.download = fileName;
+        body.appendChild(saver);
+        saver.dispatchEvent(new MouseEvent("click"));
+        body.removeChild(saver);
+        URL.revokeObjectURL(blobURL);
+        }
+
+        </script>
+    </body>
+</html> 
