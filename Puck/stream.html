@@ -12,8 +12,9 @@
 
         // Code to upload to Bangle.js
         var PUCK_CODE = `
-        const GYRO_SENSITIVITY =  65;
-        const ACC_SENSITIVITY =  8192;
+       
+        const GYRO_SENSITIVITY =  16.382;
+        const ACC_SENSITIVITY =  2047.75;
         const T = 0.014; // 104Hz
 
         class Acc {
@@ -51,6 +52,7 @@
         }
 
         Puck.accelOn(104); // default 12.5Hz
+        Puck.accelWr(0x11,0x4C); //Set DPS to 2000
         Puck.on('accel', function(data) {
         var acc = new Acc(data.acc.x, data.acc.y, data.acc.z);
         var gyro = new Gyro(data.gyro.x, data.gyro.y, data.gyro.z);
@@ -59,12 +61,12 @@
 
         var d = [
             "A",
-            acc.x,
-            acc.y,
-            acc.z,
-            gyro.x,
-            gyro.y,
-            gyro.z,
+            acc.x/ACC_SENSITIVITY,
+            acc.y/ACC_SENSITIVITY,
+            acc.z/ACC_SENSITIVITY,
+            gyro.x/GYRO_SENSITIVITY,
+            gyro.y/GYRO_SENSITIVITY,
+            gyro.z/GYRO_SENSITIVITY,
             cf[0],
             cf[1],
         ];
