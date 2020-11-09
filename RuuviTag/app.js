@@ -1,4 +1,4 @@
-function LIS2DH12_FROM_FS_8g_NM_TO_mg(lsb){return (float)((int16_t)lsb>>6)* 16.0f}
+//function LIS2DH12_FROM_FS_8g_NM_TO_mg(lsb){return (float)((int16_t)lsb>>6)* 16.0f}
 const ACC_SENSITIVITY =  128; //16G
 var counter = 0;
 var Ruuvitag = require("Ruuvitag");
