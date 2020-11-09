@@ -1,4 +1,5 @@
-const ACC_SENSITIVITY =  222.75; //8G
+function LIS2DH12_FROM_FS_8g_NM_TO_mg(lsb){return (float)((int16_t)lsb>>6)* 16.0f}
+const ACC_SENSITIVITY =  128; //16G
 var counter = 0;
 var Ruuvitag = require("Ruuvitag");
 function startAdv(){
@@ -20,10 +21,10 @@ function startAdv(){
       Bluetooth.println(f);
     }
   });
-  //100hz
-  Ruuvitag.accel.setPowerMode("normal");
-  //Set 8G range
-  Ruuvitag.accel.w(0x23,0x20);
+  //100hz @12bit
+  Ruuvitag.accel.setPowerMode("highres");
+  //Set 16G range
+  Ruuvitag.accel.w(0x23,0b00111000);
 }
 setWatch( function() {
 Ruuvitag.setAccelOn(false);
