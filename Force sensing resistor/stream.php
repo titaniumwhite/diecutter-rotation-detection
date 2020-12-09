@@ -5,7 +5,18 @@
     <body>
     <script src="https://www.puck-js.com/puck.js"></script>
     <button id="btnConnect">Connect</button>
-    <button id="btnStop">Stop</button>
+    <button id="btnStopRuuvi">Stop Ruuvi</button>
+    <button id="btnStopConnection">Stop Connection</button>
+    <br> <br> <br>
+    <h2>
+    Per terminare lo stream premere in ordine:
+    <br>
+    1) <u> Stop Ruuvi</u> per fermare lo stream sul RuuviTag e salvare un file csv in locale
+    <br>
+    2) <u> Stop Connection</u> per interrompere la connessione aperta dal computer
+    <br> <br>
+    Dalla console del browser si possono vedere i pacchetti ricevuti.
+    </h2>
     <h1 id="info"></h1>
         
         <script>
@@ -16,38 +27,39 @@
         var connection;
         document.getElementById("btnConnect").addEventListener("click", function() {
         // disconnect if connected already
-        if (connection) {
-            connection.close();
-            connection = undefined;
-        }
-
-        document.getElementById("btnStop").addEventListener("click", function() {
-            connection.write("rotation=0;\n", function() {});
-            connection.write("stopAdv();\n", function() {});
-            if(connection) {
+            if (connection) {
                 connection.close();
+                connection = undefined;
             }
-        });
-        
-        Puck.connect(function(c) {
-            if (!c) {
-            alert("Couldn't connect!");
-            return;
-            }
-            connection = c;
+            
+            Puck.connect(function(c) {
+                if (!c) {
+                    alert("Couldn't connect!");
+                    return;
+                }
+                
+                connection = c;
 
-            document.getElementById("info").innerHTML = "Per terminare lo stream premi il pulsante B sul Ruuvi (vicino ai morsetti della batteria)";
-            var buf = "";
-            connection.on("data", function(d) {
-            buf += d;
-            var l = buf.split("\n");
-            buf = l.pop();
-            l.forEach(onLine);
+                var buf = "";
+                connection.on("data", function(d) {
+                    buf += d;
+                    var l = buf.split("\n");
+                    buf = l.pop();
+                    l.forEach(onLine);
+                });
+
+                connection.write("startAdv();\n", function() {});
+
+                document.getElementById("btnStopRuuvi").addEventListener("click", function() {
+                    connection.write("stopAdv();\n", function() {});
+                    oneTime = 0;
+                });
+
+                document.getElementById("btnStopConnection").addEventListener("click", function() {
+                    if(connection) connection.close();
+                })
+
             });
-
-            connection.write("startAdv();\n", function() {});
-
-        });
         });
 
         function onLine(line) {
