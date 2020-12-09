@@ -1,34 +1,64 @@
 <html>
  <head>
-  <title>RuuviTAg Accelerometer streaming</title>
+  <title>Puck.js Accelerometer streaming</title>
  </head>
     <body>
     <script src="https://www.puck-js.com/puck.js"></script>
     <button id="btnConnect">Connect</button>
-    <button id="Stop">Stop</button>
     <h1 id="info"></h1>
         <script>
 
         var csv = "";
 
         // Code to upload to Bangle.js
-        var RUUVI_CODE = `
-        const ACC_SENSITIVITY =  1023;
-        var Ruuvitag = require("Ruuvitag");
-        Ruuvitag.setAccelOn(true, function(xyz) {
+        var PUCK_CODE = `
+       
+        const GYRO_SENSITIVITY =  16.382;
+        const ACC_SENSITIVITY =  2047.75;
+        const T = 0.014; // 104Hz
+
+        class Acc {
+        constructor(x,y,z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        }
+
+        class Gyro {
+        constructor(x,y,z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        }
+
+        
+        Puck.accelOn(104); // default 12.5Hz
+        Puck.accelWr(0x11,0x4C); //Set DPS to 2000
+        Puck.on('accel', function(data) {
+        var acc = new Acc(data.acc.x, data.acc.y, data.acc.z);
+        var gyro = new Gyro(data.gyro.x, data.gyro.y, data.gyro.z);
+
+        var cf = complementaryFilter(acc, gyro);
+
         var d = [
             "A",
-            xyz.x/ACC_SENSITIVITY,
-            xyz.y/ACC_SENSITIVITY,
-            xyz.z/ACC_SENSITIVITY
+            acc.x/ACC_SENSITIVITY,
+            acc.y/ACC_SENSITIVITY,
+            acc.z/ACC_SENSITIVITY,
+            gyro.x/GYRO_SENSITIVITY,
+            gyro.y/GYRO_SENSITIVITY,
+            gyro.z/GYRO_SENSITIVITY,
+            cf[0],
+            cf[1],
         ];
-        console.log(d.join(","));
+
         Bluetooth.println(d.join(","));
         });
-        Ruuvitag.accel.setPowerMode("normal");
 
         setWatch( function() {
-        Ruuvitag.setAccelOn(false);
+        Puck.accelOff();
         var f = ["F"];
         Bluetooth.println(f);
         }, BTN1, {repeat: true});
@@ -51,7 +81,7 @@
             connection = c;
             // Handle the data we get back, and call 'onLine'
             // whenever we get a line
-            document.getElementById("info").innerHTML = "Per terminare lo stream premi il pulsante sul Ruuvi o il pulsante STOP";
+            document.getElementById("info").innerHTML = "Per terminare lo stream premi il pulsante sul Puck";
             var buf = "";
             connection.on("data", function(d) {
             buf += d;
@@ -60,13 +90,16 @@
             l.forEach(onLine);
             });
             // First, reset the Bangle
-            connection.write("startAdv();\n", function() {});
-            connection.write("startAdv();\n", function() {});
+            connection.write("reset();\n", function() {
+            // Wait for it to reset itself
+            setTimeout(function() {
+                // Now upload our code to it
+                connection.write("\x03\x10if(1){"+PUCK_CODE+"}\n",
+                function() { console.log("Ready..."); });
+            }, 1500);
+            });
         });
         });
-        document.getElementById("Stop").addEventListener("click", function() {
-            connection.write("stop();\n");
-         });
 
         // When we get a line of data, check it and if it's
         // from the accelerometer, update it
@@ -74,15 +107,26 @@
             console.log("RECEIVED:"+line);
             var f = line;
             var d = line.split(",");
-            if (d.length==4 && d[0]=="A") {
+            if (d.length==9 && d[0]=="A") {
                 // we have an accelerometer reading
                 var to_add = "";
                 var accel = {
-                x : parseFloat(d[1]),
-                y : parseFloat(d[2]),
-                z : parseFloat(d[3])
+                x : parseFloat(d[1])/8192,
+                y : parseFloat(d[2])/8192,
+                z : parseFloat(d[3])/8192,
                 };   
                 to_add += accel.x +" "+ accel.y+" "+accel.z+" ";
+                var gyro = {
+                x : parseFloat(d[4])/65,
+                y : parseFloat(d[5])/65,
+                z : parseFloat(d[6])/65,
+                };
+                to_add += gyro.x +" "+ gyro.y+" "+gyro.z+" ";
+                var cf = {
+                pitch : parseFloat(d[7]),
+                roll : parseFloat(d[8]),
+                };            
+                to_add += cf.pitch +" "+ cf.roll;
                 to_add += "\n";
                 csv += to_add;
 

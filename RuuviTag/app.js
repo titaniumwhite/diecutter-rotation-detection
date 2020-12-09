@@ -26,6 +26,13 @@ function startAdv(){
   //Set 16G range
   Ruuvitag.accel.w(0x23,0b00111000);
 }
+
+function stop(){
+  Ruuvitag.setAccelOn(false);
+  var f = ["F"];
+  Bluetooth.println(f);
+}
+
 setWatch( function() {
 Ruuvitag.setAccelOn(false);
 var f = ["F"];
