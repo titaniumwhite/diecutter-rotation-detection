@@ -5,6 +5,7 @@
     <body>
     <script src="https://www.puck-js.com/puck.js"></script>
     <button id="btnConnect">Connect</button>
+    <button id="btnStop">Stop</button>
     <h1 id="info"></h1>
         
         <script>
@@ -19,6 +20,14 @@
             connection.close();
             connection = undefined;
         }
+
+        document.getElementById("btnStop").addEventListener("click", function() {
+            connection.write("rotation=0;\n", function() {});
+            connection.write("stopAdv();\n", function() {});
+            if(connection) {
+                connection.close();
+            }
+        });
         
         Puck.connect(function(c) {
             if (!c) {
@@ -37,6 +46,7 @@
             });
 
             connection.write("startAdv();\n", function() {});
+
         });
         });
 

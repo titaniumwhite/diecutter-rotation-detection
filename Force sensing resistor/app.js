@@ -3,10 +3,11 @@ const sensitivity = 0.9;
 var Ruuvitag = require("Ruuvitag");
 var rotation = 0;
 var flag = 0;
+var idInterval;
 
 function startAdv(){
   console.log("PRESSURE SENSOR READY");
-  var idInterval = setInterval(function(){
+  idInterval = setInterval(function(){
     pinMode(ADC, "analog");
     var analog = analogRead(ADC);
     //console.log(analog);
@@ -19,11 +20,11 @@ function startAdv(){
         flag = 0;
     }
   }, 50);
+}
 
-  setWatch(function() {
-    console.log("PRESSING THE BUTTON");
+function stopAdv() {
+    console.log("STOP THE CONNECTION");
     clearInterval(idInterval);
     rotation = 0;
     Bluetooth.print(["F"]);
-  }, BTN1, {repeat: true});
 }
