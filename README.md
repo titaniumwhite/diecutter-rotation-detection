@@ -15,7 +15,7 @@
 Nella cartella sono presenti tre file:
 - ``` app.js ``` è lo script flashato nel Ruuvi, non è necessario il suo utilizzo
 - ``` influxRequest.php ``` è lo script che si occupa di fare richieste di scrittura su InfluxDB
-- ``` stream.php ``` è lo script che si deve aprire dal browser e che si occupa di stabilire la connessione col Ruuvi e di fare richieste a influxRequest.php quando necessario
+- ``` stream.php ``` è lo script che si occupa di stabilire la connessione col Ruuvi e di fare richieste a influxRequest.php quando necessario
 
 Per il corretto funzionamento, ``` influxRequest.php ``` necessita del file autoload.php presente nel path .\xampp\htdocs\vendor\autoload.php. 
 
@@ -23,7 +23,7 @@ Per il corretto funzionamento, ``` influxRequest.php ``` necessita del file auto
     In questo modo il file autoload.php sarà automaticamente trovato da influxRequest.php;
 2) avviare il server Apache da XAMPP;
 3) avviare influxd;
-4) creare un database chiamato ruuvi (è importante che abbia questo nome, altrimenti le richieste di salvataggio non andranno a buon fine);
+4) creare un database chiamato *ruuvi* (è importante che abbia questo nome, altrimenti le richieste di salvataggio non andranno a buon fine);
 3) accedere a http://localhost/stream.php;
 4) premere *connect* per avviare la connessione e scegliere il Ruuvitag desiderato;
 5) una volta effettuata la connessione l'acquisizione inizierà dopo circa 1-2 secondi, è possibile visualizzare i pacchetti ricevuti dalla console del browser;
