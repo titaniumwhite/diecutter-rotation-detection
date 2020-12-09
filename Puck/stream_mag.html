@@ -5,7 +5,6 @@
     <body>
     <script src="https://www.puck-js.com/puck.js"></script>
     <button id="btnConnect">Connect</button>
-    <button id="Stop">Stop</button>
     <h1 id="info"></h1>
         <script>
 
@@ -34,24 +33,7 @@
         }
         }
 
-        function complementaryFilter(acc, gyro){
-        var pitchAcc, rollAcc, yawAcc;
-        var ax = acc.x, ay = acc.y, az = acc.z;
-        var gx = gyro.x, gy = gyro.y, gz = gyro.z;
-
-        var pitch = (gx / GYRO_SENSITIVITY) + ((gx / GYRO_SENSITIVITY) * T);
-        var roll = (gy / GYRO_SENSITIVITY) - ((gy / GYRO_SENSITIVITY) * T);
-        var yaw = ((gz / GYRO_SENSITIVITY) * T);
-
-        pitchAcc = Math.atan2( ay, az) * 180 / Math.PI;
-        pitch = pitch * 0.98 + pitchAcc * 0.02;
-
-        rollAcc = Math.atan(ax, az) * 180 / Math.PI;
-        roll = roll * 0.98 + rollAcc * 0.02;
-
-        return [pitch, roll];
-        }
-
+        
         Puck.accelOn(104); // default 12.5Hz
         Puck.accelWr(0x11,0x4C); //Set DPS to 2000
         Puck.on('accel', function(data) {
@@ -74,11 +56,7 @@
 
         Bluetooth.println(d.join(","));
         });
-        function stop(){
-        Puck.accelOff();
-        var f = ["F"];
-        Bluetooth.println(f);
-        }
+
         setWatch( function() {
         Puck.accelOff();
         var f = ["F"];
@@ -103,7 +81,7 @@
             connection = c;
             // Handle the data we get back, and call 'onLine'
             // whenever we get a line
-            document.getElementById("info").innerHTML = "Per terminare lo stream premi il pulsante sul Puck o il pulsante STOP";
+            document.getElementById("info").innerHTML = "Per terminare lo stream premi il pulsante sul Puck";
             var buf = "";
             connection.on("data", function(d) {
             buf += d;
@@ -122,10 +100,6 @@
             });
         });
         });
-        
-         document.getElementById("Stop").addEventListener("click", function() {
-            connection.write("stop();\n");
-         });
 
         // When we get a line of data, check it and if it's
         // from the accelerometer, update it
