@@ -4,10 +4,10 @@
 ### Installazione
 - [XAMPP](https://www.apachefriends.org/it/index.html)
 - PHP (io uso versione 7.4.12)
-- InfluxDB (porta di default 8086)
+- InfluxDB (porta di default 8086) Necessaria versione 1.8+
 - [influxdb-php](https://github.com/influxdata/influxdb-php) che si può installare tramite Composer 
         ```
-       $ composer require influxdb/influxdb-php
+       $ composer require influxdata/influxdb-client-php
        ```
 - Edge o Chrome, in quanto è necessario il Web Bluetooth.
        
