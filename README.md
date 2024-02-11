@@ -1,4 +1,4 @@
-# Counting Die-Cutter rotations using a force sensing resistor and a Ruuvitag
+# Counting Die-Cutter rotations using a force sensing resistor and a RuuviTag
 This project is part of my Bachelor Thesis. I weld a force sensing resistor to an IoT device (RuuviTag) and I developed a script to establish a Bluetooth communication and data acquisition between the RuuviTag and a server. The idea is to stick the force sensing resistor with the IoT device to the Die-Cutter so that, each time it does a rotation, it is counted thanks to a specific script installed on the RuuviTag. Than the data regarding the rotations are sent to the server and saved in InfluxDB database.
 
 ## Technologies Used ##
